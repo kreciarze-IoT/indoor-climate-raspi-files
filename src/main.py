@@ -1,27 +1,24 @@
-from cputemp.cputemp import bt_le_server, ThermometerService, ThermometerAdvertisement
+from bluetooth.krecik_ble_server import krecik_ble_server
+
+from time import sleep
+
 
 def main():
 
-    # @TODO: zaktualizować serwisy i advertisment cputemp
-    #
-    # Wprowadzenie do Bluetooth LE:
-    # https://devzone.nordicsemi.com/guides/short-range-guides/b/bluetooth-low-energy/posts/ble-services-a-beginners-tutorial
-    #
-    # Docelowo ten serwis (jako cały) wywoływać tylko na samym początku, dla nieskonfigurowanego urządzenia (lub po factor-resecie ???)
+    # Docelowo ten serwis (jako cały) wywoływać tylko na samym początku,
+    # dla nieskonfigurowanego urządzenia (lub po factor-resecie ???)
 
-    bt_server = bt_le_server()
-    bt_server.add_service(ThermometerService(0))
-    bt_server.register()
-
-    adv = ThermometerAdvertisement(0)
-    adv.register()
+    ble = krecik_ble_server()
+    ble.run()
 
     try:
-        bt_server.run()
+        i = 0
+        while True:
+            sleep(1)
+            print(f"Krecik BLE server is running... {i}")
+            i+=1
     except KeyboardInterrupt:
-        bt_server.quit()
-
-    #################################   
+        ble.quit()
 
 
 if __name__=='__main__':
