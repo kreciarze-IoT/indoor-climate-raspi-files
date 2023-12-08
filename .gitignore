@@ -1,5 +1,6 @@
+venv/
 env/
 
 src/.lgd-nfy0
 
-
+.idea/

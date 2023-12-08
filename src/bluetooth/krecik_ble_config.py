@@ -1,10 +1,13 @@
 import dbus
 
-from .advertisement import Advertisement
-from .service import bt_le_server, Service, Characteristic, Descriptor
-from gpiozero import CPUTemperature
+from .cputemp.advertisement import Advertisement
+from .cputemp.service import Service
+from .cputemp.descriptor import Descriptor
+from .cputemp.characteristic import Characteristic
+from .cputemp.constants import GATT_CHRC_IFACE
 
-GATT_CHRC_IFACE = "org.bluez.GattCharacteristic1"
+import numpy as np
+
 NOTIFY_TIMEOUT = 5000
 
 class ThermometerAdvertisement(Advertisement):
@@ -44,7 +47,7 @@ class TempCharacteristic(Characteristic):
         value = []
         unit = "C"
 
-        cpu = CPUTemperature()
+        cpu = np.randint(0, 100)
         temp = cpu.temperature
         if self.service.is_farenheit():
             temp = (temp * 1.8) + 32
