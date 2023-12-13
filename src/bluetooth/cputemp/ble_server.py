@@ -45,10 +45,11 @@ class ble_server(dbus.service.Object):
         return response
 
     def register_app_callback(self):
-        print("GATT application registered")
+        # print("GATT application registered")
+        pass
 
     def register_app_error_callback(self, error):
-        print("Failed to register application: " + str(error))
+        raise RuntimeError("Failed to register application: " + str(error))
 
     def register(self):
         if self.advertisement is None:
@@ -71,5 +72,5 @@ class ble_server(dbus.service.Object):
         self.mainloop.run()
 
     def quit(self):
-        print("\nGATT application terminated")
+        # print("\nGATT application terminated")
         self.mainloop.quit()
