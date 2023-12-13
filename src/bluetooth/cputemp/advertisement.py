@@ -98,7 +98,8 @@ class Advertisement(dbus.service.Object):
         print ('%s: Released!' % self.path)
 
     def register_ad_callback(self):
-        print("GATT advertisement registered")
+        # print("GATT advertisement registered")
+        pass
 
     def register_ad_error_callback(self):
         print("Failed to register GATT advertisement")

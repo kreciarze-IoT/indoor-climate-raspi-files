@@ -4,146 +4,108 @@ from .cputemp.advertisement import Advertisement
 from .cputemp.service import Service
 from .cputemp.descriptor import Descriptor
 from .cputemp.characteristic import Characteristic
-from .cputemp.constants import GATT_CHRC_IFACE
-
-import numpy as np
 
 NOTIFY_TIMEOUT = 5000
+
+
+class KrecikAdvertisement(Advertisement):
+    def __init__(self, index):
+        Advertisement.__init__(self, index, "peripheral")
+        self.add_local_name("KrecikIOT")
+        self.include_tx_power = True
+
+
+class KrecikService(Service):
+    THERMOMETER_SVC_UUID = "00000001-710e-4a5b-8d75-3e5b444bc3cf"
+
+    def __init__(self, index):
+        self.data = ""
+        self.valid_states = {
+            'R': "Ready for config",
+            'S': "Success: configuring",
+            'T': "Failed: invalid token",
+            'D': "Failed: invalid data"
+        }
+
+        Service.__init__(self, index, self.THERMOMETER_SVC_UUID, True)
+        self.characteristic = KrecikCharacteristic(self)
+        self.add_characteristic(self.characteristic)
+
+    def get_data(self):
+        if self.data != "":
+            data = self.data
+            self.data = ""
+            return data
+        raise RuntimeError("No data")
+
+    def set_message(self, message):
+        if message not in self.valid_states:
+            raise RuntimeError("Invalid message")
+        self.characteristic.message = message
+
+    def get_valid_states(self):
+        return self.valid_states
+
+
+class KrecikCharacteristic(Characteristic):
+    UNIT_CHARACTERISTIC_UUID = "00000004-710e-4a5b-8d75-3e5b444bc3cf"
+
+    def __init__(self, service):
+        Characteristic.__init__(
+            self, self.UNIT_CHARACTERISTIC_UUID,
+            ["read", "write"], service)
+
+        self.add_descriptor(KrecikDescriptor(self))
+
+        self.message = "R"
+
+    def WriteValue(self, value, options):
+        data = ""
+        for v in value:
+            data += chr(v)
+
+        self.service.data = data
+
+    def ReadValue(self, options):
+
+        value = []
+
+        for c in self.message:
+            value.append(dbus.Byte(c.encode()))
+
+        return value
+
+
+class KrecikDescriptor(Descriptor):
+    UNIT_DESCRIPTOR_UUID = "2901"
+    UNIT_DESCRIPTOR_VALUE = (
+        "Krecik IOT unit.\n"
+        "Write configuration data to this characteristic.\n"
+        "Response states:\n"
+    )
+
+    def __init__(self, characteristic):
+        Descriptor.__init__(
+            self, self.UNIT_DESCRIPTOR_UUID,
+            ["read"],
+            characteristic)
+
+        self.UNIT_DESCRIPTOR_VALUE += ".\n".join(
+            [str(i) + ": " + self.chrc.service.get_valid_states()[i]
+             for i in self.chrc.service.get_valid_states()]
+        )
+
+    def ReadValue(self, options):
+        value = []
+
+        for c in self.UNIT_DESCRIPTOR_VALUE:
+            value.append(dbus.Byte(c.encode()))
+
+        return value
+
 
 class ThermometerAdvertisement(Advertisement):
     def __init__(self, index):
         Advertisement.__init__(self, index, "peripheral")
         self.add_local_name("Thermometer")
         self.include_tx_power = True
-
-class ThermometerService(Service):
-    THERMOMETER_SVC_UUID = "00000001-710e-4a5b-8d75-3e5b444bc3cf"
-
-    def __init__(self, index):
-        self.farenheit = True
-
-        Service.__init__(self, index, self.THERMOMETER_SVC_UUID, True)
-        self.add_characteristic(TempCharacteristic(self))
-        self.add_characteristic(UnitCharacteristic(self))
-
-    def is_farenheit(self):
-        return self.farenheit
-
-    def set_farenheit(self, farenheit):
-        self.farenheit = farenheit
-
-class TempCharacteristic(Characteristic):
-    TEMP_CHARACTERISTIC_UUID = "00000002-710e-4a5b-8d75-3e5b444bc3cf"
-
-    def __init__(self, service):
-        self.notifying = False
-
-        Characteristic.__init__(
-                self, self.TEMP_CHARACTERISTIC_UUID,
-                ["notify", "read"], service)
-        self.add_descriptor(TempDescriptor(self))
-
-    def get_temperature(self):
-        value = []
-        unit = "C"
-
-        cpu = np.randint(0, 100)
-        temp = cpu.temperature
-        if self.service.is_farenheit():
-            temp = (temp * 1.8) + 32
-            unit = "F"
-
-        strtemp = str(round(temp, 1)) + " " + unit
-        for c in strtemp:
-            value.append(dbus.Byte(c.encode()))
-
-        return value
-
-    def set_temperature_callback(self):
-        if self.notifying:
-            value = self.get_temperature()
-            self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
-
-        return self.notifying
-
-    def StartNotify(self):
-        if self.notifying:
-            return
-
-        self.notifying = True
-
-        value = self.get_temperature()
-        self.PropertiesChanged(GATT_CHRC_IFACE, {"Value": value}, [])
-        self.add_timeout(NOTIFY_TIMEOUT, self.set_temperature_callback)
-
-    def StopNotify(self):
-        self.notifying = False
-
-    def ReadValue(self, options):
-        value = self.get_temperature()
-
-        return value
-
-class TempDescriptor(Descriptor):
-    TEMP_DESCRIPTOR_UUID = "2901"
-    TEMP_DESCRIPTOR_VALUE = "CPU Temperature"
-
-    def __init__(self, characteristic):
-        Descriptor.__init__(
-                self, self.TEMP_DESCRIPTOR_UUID,
-                ["read"],
-                characteristic)
-
-    def ReadValue(self, options):
-        value = []
-        desc = self.TEMP_DESCRIPTOR_VALUE
-
-        for c in desc:
-            value.append(dbus.Byte(c.encode()))
-
-        return value
-
-class UnitCharacteristic(Characteristic):
-    UNIT_CHARACTERISTIC_UUID = "00000003-710e-4a5b-8d75-3e5b444bc3cf"
-
-    def __init__(self, service):
-        Characteristic.__init__(
-                self, self.UNIT_CHARACTERISTIC_UUID,
-                ["read", "write"], service)
-        self.add_descriptor(UnitDescriptor(self))
-
-    def WriteValue(self, value, options):
-        val = str(value[0]).upper()
-        if val == "C":
-            self.service.set_farenheit(False)
-        elif val == "F":
-            self.service.set_farenheit(True)
-
-    def ReadValue(self, options):
-        value = []
-
-        if self.service.is_farenheit(): val = "F"
-        else: val = "C"
-        value.append(dbus.Byte(val.encode()))
-
-        return value
-
-class UnitDescriptor(Descriptor):
-    UNIT_DESCRIPTOR_UUID = "2901"
-    UNIT_DESCRIPTOR_VALUE = "Temperature Units (F or C)"
-
-    def __init__(self, characteristic):
-        Descriptor.__init__(
-                self, self.UNIT_DESCRIPTOR_UUID,
-                ["read"],
-                characteristic)
-
-    def ReadValue(self, options):
-        value = []
-        desc = self.UNIT_DESCRIPTOR_VALUE
-
-        for c in desc:
-            value.append(dbus.Byte(c.encode()))
-
-        return value
-
