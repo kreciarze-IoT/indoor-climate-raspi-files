@@ -56,3 +56,6 @@ if __name__ == '__main__':
         post_record(device_bearer_token, round(
             temperature, 2), round(pressure, 2))
         time.sleep(1)
+
+# obczaj sobie ten kurs
+# https://forbot.pl/blog/kurs-raspberry-pi-podstawy-pythona-gpio-id26099

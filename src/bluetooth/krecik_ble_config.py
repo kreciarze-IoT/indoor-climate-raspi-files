@@ -1,9 +1,9 @@
 import dbus
 
-from .cputemp.advertisement import Advertisement
-from .cputemp.service import Service
-from .cputemp.descriptor import Descriptor
-from .cputemp.characteristic import Characteristic
+from bluetooth.cputemp.advertisement import Advertisement
+from bluetooth.cputemp.service import Service
+from bluetooth.cputemp.descriptor import Descriptor
+from bluetooth.cputemp.characteristic import Characteristic
 
 NOTIFY_TIMEOUT = 5000
 

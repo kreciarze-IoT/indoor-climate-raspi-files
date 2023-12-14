@@ -1,7 +1,7 @@
 import dbus
 
-from .constants import GATT_CHRC_IFACE, DBUS_PROP_IFACE
-from .exceptions import InvalidArgsException, NotSupportedException
+from bluetooth.cputemp.constants import GATT_CHRC_IFACE, DBUS_PROP_IFACE
+from bluetooth.cputemp.exceptions import InvalidArgsException, NotSupportedException
 
 try:
   from gi.repository import GObject
