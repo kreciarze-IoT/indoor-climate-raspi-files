@@ -2,7 +2,7 @@ import dbus
 import dbus.mainloop.glib
 import dbus.exceptions
 
-from .system_tools import BleTools
+from bluetooth.cputemp.system_tools import BleTools
 
 try:
   from gi.repository import GObject

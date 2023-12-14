@@ -1,8 +1,8 @@
 import array
 import dbus
 
-from .exceptions import InvalidArgsException, NotSupportedException, NotPermittedException
-from .constants import DBUS_PROP_IFACE, GATT_DESC_IFACE
+from bluetooth.cputemp.exceptions import InvalidArgsException, NotSupportedException, NotPermittedException
+from bluetooth.cputemp.constants import DBUS_PROP_IFACE, GATT_DESC_IFACE
 
 class Descriptor(dbus.service.Object):
     def __init__(self, uuid, flags, characteristic):

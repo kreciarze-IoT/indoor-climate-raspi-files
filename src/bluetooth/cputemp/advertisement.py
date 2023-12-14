@@ -1,8 +1,8 @@
 import dbus
 import dbus.service
 
-from .system_tools import BleTools
-from .service import InvalidArgsException
+from bluetooth.cputemp.system_tools import BleTools
+from bluetooth.cputemp.service import InvalidArgsException
 
 BLUEZ_SERVICE_NAME = "org.bluez"
 LE_ADVERTISING_MANAGER_IFACE = "org.bluez.LEAdvertisingManager1"

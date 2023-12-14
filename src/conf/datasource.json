@@ -1,4 +1,6 @@
 {
+  "wifi_ssid": null,
+  "wifi_password": null,
   "host": null,
   "port": null,
   "user": null,

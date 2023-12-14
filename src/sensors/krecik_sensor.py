@@ -23,3 +23,6 @@ while True:
     pressure = bmp280.get_pressure()
     print('{:05.2f}*C {:05.2f}hPa'.format(temperature, pressure))
     time.sleep(1)
+
+# obczaj sobie ten kurs
+# https://forbot.pl/blog/kurs-raspberry-pi-podstawy-pythona-gpio-id26099

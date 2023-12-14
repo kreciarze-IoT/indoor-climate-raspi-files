@@ -1,12 +1,12 @@
-from .cputemp.ble_server import ble_server
-from .krecik_ble_config import KrecikService, KrecikAdvertisement
+from bluetooth.cputemp.ble_server import ble_server
+from bluetooth.krecik_ble_config import KrecikService, KrecikAdvertisement
 
 import threading
 import json
 from time import sleep
 
 
-class krecik_ble_server:
+class KrecikBleServer:
     def __init__(self):
         self.server = ble_server()
 

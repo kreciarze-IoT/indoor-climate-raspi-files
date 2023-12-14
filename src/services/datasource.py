@@ -1,7 +1,7 @@
 import json
 
 
-class datasource:
+class Datasource:
     def __init__(
             self,
             bt_token="krecik_krol",
@@ -11,6 +11,9 @@ class datasource:
         self.conf_file = conf_file
 
         data = self.load_data_from_file()
+
+        self.wifi_ssid = data['wifi_ssid']
+        self.wifi_password = data['wifi_password']
 
         self.host = data['host']
         self.port = data['port']
@@ -25,11 +28,16 @@ class datasource:
         if self._BT_TOKEN != data['bt_token']:
             raise RuntimeError("T: Invalid bt_token")
 
-        if 'host' not in data \
+        if 'wifi_ssid' not in data \
+                or 'wifi_password' not in data \
+                or 'host' not in data \
                 or 'port' not in data \
                 or 'user' not in data \
                 or 'auth_token' not in data:
             raise RuntimeError("D: Invalid data")
+
+        self.wifi_ssid = data['wifi_ssid']
+        self.wifi_password = data['wifi_password']
 
         self.host = data['host']
         self.port = data['port']
@@ -46,6 +54,8 @@ class datasource:
     def save_data_to_file(self):
         with open(self.conf_file, 'w') as f:
             data = {
+                'wifi_ssid': self.wifi_ssid,
+                'wifi_password': self.wifi_password,
                 'host': self.host,
                 'port': self.port,
                 'user': self.user,
@@ -55,6 +65,8 @@ class datasource:
             f.write('\n')
 
     def reset_data(self):
+        self.wifi_ssid = None
+        self.wifi_password = None
         self.host = None
         self.port = None
         self.user = None
@@ -62,7 +74,9 @@ class datasource:
         self.save_data_to_file()
 
     def is_configured(self):
-        return self.host is not None \
+        return self.wifi_ssid is not None \
+            and self.wifi_password is not None \
+            and self.host is not None \
             and self.port is not None \
             and self.user is not None \
             and self.auth_token is not None
@@ -72,6 +86,13 @@ class datasource:
 
     def set_bt_token(self, bt_token):
         self._BT_TOKEN = bt_token
+        self.save_data_to_file()
+
+    def get_wifi_ssid(self):
+        return self.wifi_ssid
+
+    def set_wifi_ssid(self, wifi_ssid):
+        self.wifi_ssid = wifi_ssid
         self.save_data_to_file()
 
     def get_host(self):
@@ -109,7 +130,9 @@ class datasource:
             return value
 
     def __str__(self):
-        return "host: " + self.__stringify_none(self.host) + "\n" + \
+        return "wifi_ssid: " + self.__stringify_none(self.wifi_ssid) + "\n" + \
+            "wifi_password: " + self.__stringify_none(self.wifi_password) + "\n" + \
+            "host: " + self.__stringify_none(self.host) + "\n" + \
             "port: " + self.__stringify_none(self.port) + "\n" + \
             "user: " + self.__stringify_none(self.user) + "\n" + \
             "auth_token: " + self.__stringify_none(self.auth_token)

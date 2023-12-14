@@ -5,7 +5,7 @@ try:
 except ImportError:
     import gobject as GObject
 
-from .constants import BLUEZ_SERVICE_NAME, DBUS_OM_IFACE, LE_ADVERTISING_MANAGER_IFACE
+from bluetooth.cputemp.constants import BLUEZ_SERVICE_NAME, DBUS_OM_IFACE, LE_ADVERTISING_MANAGER_IFACE
 
 class BleTools(object):
     @classmethod
