@@ -4,3 +4,5 @@ env/
 src/.lgd-nfy0
 
 .idea/
+
+conf/datasource.json
