@@ -4,10 +4,16 @@ from bluetooth.krecik_ble_config import KrecikService, KrecikAdvertisement
 import threading
 import json
 from time import sleep
+from cryptography.fernet import Fernet
 
 
 class KrecikBleServer:
-    def __init__(self):
+    def __init__(self, bt_token):
+        try:
+            self.fernet = Fernet(bt_token)
+        except ValueError:
+            raise
+
         self.server = ble_server()
 
         self.service = KrecikService(0)
@@ -23,7 +29,8 @@ class KrecikBleServer:
 
     def get_data(self):
         try:
-            data = self.service.get_data()
+            encrypted_data = bytes(self.service.get_data(), encoding='utf-8')
+            data = self.fernet.decrypt(encrypted_data).decode('utf-8')
             json_data = json.loads(data)
             return json_data
         except json.decoder.JSONDecodeError:

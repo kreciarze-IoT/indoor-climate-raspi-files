@@ -14,7 +14,7 @@ class KrecikIOTController:
 
     def __init__(
             self,
-            bt_token="krecik_krol",
+            bt_token,
             datasource_config_file="src/conf/datasource.json",
     ):
 
@@ -49,7 +49,9 @@ class KrecikIOTController:
 
         print("Started datasource initialization process.")
 
-        ble = KrecikBleServer()
+        ble = KrecikBleServer(
+            self.datasource.get_bt_token()
+        )
         ble.run()
         print("Krecik BLE server running. Waiting for data...")
 

@@ -1,13 +1,3 @@
-lint:
-	mypy ./src
-	ruff check ./src
-	black ./src --diff --check
-
-fix:
-	black ./src
-	ruff check ./src --fix
-	black ./src
-
 upload:
 	zip -r src.zip src
 	scp src.zip krecik@rpi:~/indoor-climate-raspi-files
