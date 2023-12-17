@@ -2,3 +2,4 @@ numpy
 dbus-python
 PyGObject
 requests
+cryptography
