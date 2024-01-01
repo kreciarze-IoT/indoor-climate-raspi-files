@@ -35,7 +35,7 @@ def post_record(device_bearer_token: str = '', temperature: float = 0., pressure
         "temperature": temperature,
         "pressure": pressure
     }
-    response = requests.post(url, headers=headers, json=payload)
+    response = requests.post(url, headers=headers, json=payload, verify=True)
     if response.status_code == 401:
         raise ValueError('Device bearer token is not valid')
     return response
