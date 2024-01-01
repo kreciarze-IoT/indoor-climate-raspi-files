@@ -27,7 +27,6 @@ def post_record(device_bearer_token: str = '', temperature: float = 0., pressure
     timezone = pytz.timezone('Europe/Warsaw')
     current_time = datetime.now(timezone).isoformat(
         timespec='milliseconds')
-    print(current_time)
     headers = {
         'Authorization': 'Bearer ' + device_bearer_token
     }
