@@ -129,7 +129,7 @@ class KrecikIOTController:
         return f"{host}/{endpoint}"
 
     def _send_data_to_server(self, data_dict):
-        url = self.__get_backend_url("/products/add")  # mock @TODO: change
+        url = self.__get_backend_url("/")  # mock @TODO: change
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f"Token {self.datasource.get_auth_token()}"
@@ -142,11 +142,13 @@ class KrecikIOTController:
 
         response = requests.post(url, headers=headers, json=data)
 
-        if response.status_code != 200:
-            raise RuntimeError(f"Request failed with status code {response.status_code}")
+        if response.status_code <= 100 or response.status_code >= 300:
+            print("Error response: " + str(response.json()))
+            # @TODO: handle queueing ???
+            return
 
-        # print("Response: " + str(response.json()))
-        # Thats it? I guess?
+        # @TODO: handle positive response
+        print("Success response: " + str(response.json()))
 
     def _get_current_temp(self):
         # TODO: implement
