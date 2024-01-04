@@ -4,7 +4,7 @@ from bluetooth.krecik_ble_config import KrecikService, KrecikAdvertisement
 import threading
 import json
 from time import sleep
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 
 class KrecikBleServer:
@@ -33,6 +33,8 @@ class KrecikBleServer:
             data = self.fernet.decrypt(encrypted_data).decode('utf-8')
             json_data = json.loads(data)
             return json_data
+        except InvalidToken:
+            raise RuntimeError("T: Invalid token")
         except json.decoder.JSONDecodeError:
             raise RuntimeError("D: Invalid data")
         except RuntimeError:

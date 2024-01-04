@@ -21,12 +21,6 @@ class Datasource:
 
     def load_data_from_json(self, data, save=True):
 
-        if 'bt_token' not in data:
-            raise RuntimeError("D: Invalid data")
-
-        if self._BT_TOKEN != data['bt_token']:
-            raise RuntimeError("T: Invalid bt_token")
-
         if 'wifi_ssid' not in data \
                 or 'wifi_password' not in data \
                 or 'host' not in data \
