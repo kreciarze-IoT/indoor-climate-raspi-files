@@ -22,6 +22,8 @@ class KrecikIOTController:
             datasource_config_file="conf/datasource.json",
     ):
         self.encrypt_bt = encrypt
+        self.ble_server = None
+        self.request_queue = Queue()
 
         print("Szczesc Boze!")
         self.datasource = Datasource(
@@ -36,31 +38,24 @@ class KrecikIOTController:
             print("Data source not configured.")
             self._initialize_datasource()
 
-        self.request_queue = Queue()
-
         # init wifi
-        connection_await_time = 30
-        while not self._is_connected_to_wifi():
-            print("Chosen wifi not connected.")
-
+        print("Chosen wifi not connected.")
+        try:
             self._connect_to_wifi()
-            i = 0
-            while not self._is_connected_to_wifi() and i < connection_await_time // 2:
-                i += 1
-                sleep(2)
-
-            print("Reinitializing data source in 5 seconds...")  # give user opportunity to change wifi settings
-            sleep(5)
-            self._initialize_datasource()
-        print("Connected to wifi.")
+            print("Connected to wifi.")
+        except RuntimeError:
+            print("Wifi not configured.")
+            return
 
     def _initialize_datasource(self):
 
         print("Started datasource initialization process.")
 
-        ble = KrecikBleServer(
-            bt_token=self.datasource.get_bt_token()
-        )
+        if self.ble_server is None:
+            self.ble_server = KrecikBleServer(
+                bt_token=self.datasource.get_bt_token()
+            )
+        ble = self.ble_server
         ble.run()
         print("Krecik BLE server running. Waiting for data...")
 
@@ -70,15 +65,12 @@ class KrecikIOTController:
             while awaiting_data:
                 try:
                     data_from_phone = ble.get_data()
-                    print("Received data...", data_from_phone)
 
                     self.datasource.load_data_from_json(
                         data_from_phone,
                         save=True
                     )
                     ble.set_message("S")
-
-                    print("Received data... Data saved.")
 
                     awaiting_data = False
                 except RuntimeError as e:
@@ -142,23 +134,26 @@ class KrecikIOTController:
         return f"{host}/{endpoint}"
 
     def _send_data_to_server(self, data_dict):
-        url = self.__get_backend_url("/")  # mock @TODO: change
+        url = self.__get_backend_url("/records")  # mock @TODO: change
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f"Bearer {self.datasource.get_auth_token()}"
         }
 
         if not self._is_connected_to_wifi():
-            print("Not connected to wifi. Putting data to queue.")
-            self.request_queue.put(data_dict)
-            return
+            self._connect_to_wifi()
+            sleep(.5)
+            if not self._is_connected_to_wifi():
+                print("Not connected to wifi. Putting data to queue.")
+                self.request_queue.put(data_dict)
+                return
 
         data = json.loads(json.dumps(data_dict))
 
         response = requests.post(url, headers=headers, json=data)
 
         if response.status_code <= 100 or response.status_code >= 300:
-            print("Error response: " + str(response.json()) + ". Putting data to queue.")
+            print("Error response: " + str(response.json()) + f"(code {response.status_code}). Putting data to queue.")
             self.request_queue.put(data_dict)
             return
 
