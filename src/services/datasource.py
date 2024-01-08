@@ -16,7 +16,6 @@ class Datasource:
         self.wifi_password = data['wifi_password']
 
         self.host = data['host']
-        self.user = data['user']
         self.auth_token = data['auth_token']
 
     def load_data_from_json(self, data, save=True):
@@ -24,7 +23,6 @@ class Datasource:
         if 'wifi_ssid' not in data \
                 or 'wifi_password' not in data \
                 or 'host' not in data \
-                or 'user' not in data \
                 or 'auth_token' not in data:
             raise RuntimeError("D: Invalid data")
 
@@ -32,7 +30,6 @@ class Datasource:
         self.wifi_password = data['wifi_password']
 
         self.host = data['host']
-        self.user = data['user']
         self.auth_token = data['auth_token']
 
         if save:
@@ -47,7 +44,6 @@ class Datasource:
                 'wifi_ssid': None,
                 'wifi_password': None,
                 'host': None,
-                'user': None,
                 'auth_token': None
             }
 
@@ -57,7 +53,6 @@ class Datasource:
                 'wifi_ssid': self.wifi_ssid,
                 'wifi_password': self.wifi_password,
                 'host': self.host,
-                'user': self.user,
                 'auth_token': self.auth_token
             }
             json.dump(data, f, indent=4)
@@ -67,7 +62,6 @@ class Datasource:
         self.wifi_ssid = None
         self.wifi_password = None
         self.host = None
-        self.user = None
         self.auth_token = None
         self.save_data_to_file()
 
@@ -75,7 +69,6 @@ class Datasource:
         return self.wifi_ssid is not None \
             and self.wifi_password is not None \
             and self.host is not None \
-            and self.user is not None \
             and self.auth_token is not None
 
     def get_bt_token(self):
@@ -106,13 +99,6 @@ class Datasource:
         self.host = host
         self.save_data_to_file()
 
-    def get_user(self):
-        return self.user
-
-    def set_user(self, user):
-        self.user = user
-        self.save_data_to_file()
-
     def get_auth_token(self):
         return self.auth_token
 
@@ -130,5 +116,4 @@ class Datasource:
         return "wifi_ssid: " + self.__stringify_none(self.wifi_ssid) + "\n" + \
             "wifi_password: " + self.__stringify_none(self.wifi_password) + "\n" + \
             "host: " + self.__stringify_none(self.host) + "\n" + \
-            "user: " + self.__stringify_none(self.user) + "\n" + \
             "auth_token: " + self.__stringify_none(self.auth_token)

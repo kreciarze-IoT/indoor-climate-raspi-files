@@ -16,7 +16,7 @@ class KrecikAdvertisement(Advertisement):
 
 
 class KrecikService(Service):
-    THERMOMETER_SVC_UUID = "00000001-710e-4a5b-8d75-3e5b444bc3cf"
+    SERVICE_UUID = "00000001-710e-4a5b-8d75-3e5b444bc3cf"
 
     def __init__(self, index):
         self.data = ""
@@ -27,7 +27,7 @@ class KrecikService(Service):
             'D': "Failed: invalid data"
         }
 
-        Service.__init__(self, index, self.THERMOMETER_SVC_UUID, True)
+        Service.__init__(self, index, self.SERVICE_UUID, True)
         self.characteristic = KrecikCharacteristic(self)
         self.add_characteristic(self.characteristic)
 

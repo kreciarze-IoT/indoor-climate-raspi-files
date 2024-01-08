@@ -9,14 +9,18 @@ from time import sleep
 import subprocess
 import requests
 
+from queue import Queue
+
 
 class KrecikIOTController:
 
     def __init__(
             self,
             bt_token,
+            encrypt=True,
             datasource_config_file="src/conf/datasource.json",
     ):
+        self.encrypt_bt = encrypt
 
         print("Szczesc Boze!")
         self.datasource = Datasource(
@@ -28,6 +32,8 @@ class KrecikIOTController:
         if not self.datasource.is_configured():
             print("Data source not configured.")
             self._initialize_datasource()
+
+        self.request_queue = Queue()
 
         # init wifi
         connection_await_time = 30
@@ -50,7 +56,7 @@ class KrecikIOTController:
         print("Started datasource initialization process.")
 
         ble = KrecikBleServer(
-            self.datasource.get_bt_token()
+            bt_token=self.datasource.get_bt_token()
         )
         ble.run()
         print("Krecik BLE server running. Waiting for data...")
@@ -132,22 +138,23 @@ class KrecikIOTController:
         url = self.__get_backend_url("/")  # mock @TODO: change
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f"Token {self.datasource.get_auth_token()}"
+            'Authorization': f"Bearer {self.datasource.get_auth_token()}"
         }
 
         if not self._is_connected_to_wifi():
-            raise RuntimeError("No wifi connection.")
+            print("Not connected to wifi. Putting data to queue.")
+            self.request_queue.put(data_dict)
+            return
 
         data = json.loads(json.dumps(data_dict))
 
         response = requests.post(url, headers=headers, json=data)
 
         if response.status_code <= 100 or response.status_code >= 300:
-            print("Error response: " + str(response.json()))
-            # @TODO: handle queueing ???
+            print("Error response: " + str(response.json()) + ". Putting data to queue.")
+            self.request_queue.put(data_dict)
             return
 
-        # @TODO: handle positive response
         print("Success response: " + str(response.json()))
 
     def _get_current_temp(self):
@@ -161,12 +168,19 @@ class KrecikIOTController:
                 t = self._get_current_temp()
                 data = {
                     "temperature": t,
-                    "user": self.datasource.get_user(),
                 }
                 try:
                     self._send_data_to_server(data)
                 except RuntimeError:
                     return
+
+                while not self.request_queue.empty():
+                    try:
+                        print("Sending data from queue...")
+                        data = self.request_queue.get()
+                        self._send_data_to_server(data)
+                    except RuntimeError:
+                        break
 
                 sleep(sleep_interval_s)
         except KeyboardInterrupt:

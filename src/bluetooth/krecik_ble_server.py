@@ -8,11 +8,18 @@ from cryptography.fernet import Fernet, InvalidToken
 
 
 class KrecikBleServer:
-    def __init__(self, bt_token):
-        try:
-            self.fernet = Fernet(bt_token)
-        except ValueError:
-            raise
+    def __init__(
+            self,
+            bt_token
+    ):
+        self.fernet = None
+        if bt_token is not None:
+            try:
+                self.fernet = Fernet(bt_token)
+            except ValueError:
+                raise
+
+        print(f"Initializing Krecik BLE server with{'' if bt_token is not None else 'out'} encryption.")
 
         self.server = ble_server()
 
@@ -29,8 +36,10 @@ class KrecikBleServer:
 
     def get_data(self):
         try:
-            encrypted_data = bytes(self.service.get_data(), encoding='utf-8')
-            data = self.fernet.decrypt(encrypted_data).decode('utf-8')
+            data = self.service.get_data()
+            if self.fernet is not None:
+                data = bytes(data, encoding='utf-8')
+                data = self.fernet.decrypt(data).decode('utf-8')
             json_data = json.loads(data)
             return json_data
         except InvalidToken:
@@ -50,11 +59,9 @@ class KrecikBleServer:
             t = threading.Thread(target=self.__time_reset_msg, args=[5])
             t.start()
 
-
     def __time_reset_msg(self, delay=5):
         sleep(delay)
         self.service.set_message('R')
-
 
     def quit(self, delay=0):
         sleep(delay)
