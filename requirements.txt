@@ -3,3 +3,4 @@ dbus-python
 PyGObject
 requests
 cryptography
+bmp280

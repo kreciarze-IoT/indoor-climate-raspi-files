@@ -3,6 +3,7 @@ import json
 import numpy as np
 
 from bluetooth.krecik_ble_server import KrecikBleServer
+from sensors.krecik_sensor import KrecikSensor
 from services.datasource import Datasource
 
 from time import sleep
@@ -18,7 +19,7 @@ class KrecikIOTController:
             self,
             bt_token,
             encrypt=True,
-            datasource_config_file="src/conf/datasource.json",
+            datasource_config_file="conf/datasource.json",
     ):
         self.encrypt_bt = encrypt
 
@@ -27,6 +28,8 @@ class KrecikIOTController:
             bt_token=bt_token,
             conf_file=datasource_config_file
         )
+
+        self.sensor_service = KrecikSensor()
 
         # init datasource
         if not self.datasource.is_configured():
@@ -67,6 +70,7 @@ class KrecikIOTController:
             while awaiting_data:
                 try:
                     data_from_phone = ble.get_data()
+                    print("Received data...", data_from_phone)
 
                     self.datasource.load_data_from_json(
                         data_from_phone,
@@ -102,12 +106,15 @@ class KrecikIOTController:
         connect_to_wifi_cmd = "nmcli d wifi c".split(' ')
         connect_to_wifi_cmd += [f"{ssid}"]
         connect_to_wifi_cmd += f"password {password}".split(' ')
-        cmd_output = subprocess.check_output(
-            connect_to_wifi_cmd
-        ).decode('utf-8').strip()
+        try:
+            cmd_output = subprocess.check_output(
+                connect_to_wifi_cmd
+            ).decode('utf-8').strip()
+        except subprocess.CalledProcessError as e:
+            return
 
         if cmd_output.startswith('Error:'):
-            raise RuntimeError(cmd_output)
+            return
 
     def _is_connected_to_wifi(self):
         check_connection_cmd = "nmcli -t -f name connection show --active"
@@ -157,18 +164,11 @@ class KrecikIOTController:
 
         print("Success response: " + str(response.json()))
 
-    def _get_current_temp(self):
-        # TODO: implement
-        return np.random.randint(0, 100)
-
     def run(self, sleep_interval_s):
         print("Imma send some temperature to server now idk...")
         try:
             while True:
-                t = self._get_current_temp()
-                data = {
-                    "temperature": t,
-                }
+                data = self.sensor_service.get_data()
                 try:
                     self._send_data_to_server(data)
                 except RuntimeError:
