@@ -5,9 +5,11 @@ class Datasource:
     def __init__(
             self,
             bt_token,
+            bt_iv,
             conf_file
     ):
         self._BT_TOKEN = bt_token
+        self._BT_IV = bt_iv
         self.conf_file = conf_file
 
         data = self.load_data_from_file()
@@ -74,9 +76,8 @@ class Datasource:
     def get_bt_token(self):
         return self._BT_TOKEN
 
-    def set_bt_token(self, bt_token):
-        self._BT_TOKEN = bt_token
-        self.save_data_to_file()
+    def get_bt_iv(self):
+        return self._BT_IV
 
     def get_wifi_ssid(self):
         return self.wifi_ssid

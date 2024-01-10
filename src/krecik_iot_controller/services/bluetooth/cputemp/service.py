@@ -2,7 +2,7 @@ import dbus
 import dbus.mainloop.glib
 import dbus.exceptions
 
-from bluetooth.cputemp.system_tools import BleTools
+from krecik_iot_controller.services.bluetooth.cputemp.system_tools import BleTools
 
 try:
   from gi.repository import GObject

@@ -33,7 +33,7 @@ class KrecikSensor:
 
     def get_data(self):
         return {
-            'time':self.get_time(),
+            'when':self.get_time(),
             'temperature': self.get_temperature(),
             'pressure': self.get_pressure()
         }

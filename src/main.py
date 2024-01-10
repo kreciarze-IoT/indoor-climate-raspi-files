@@ -5,19 +5,15 @@ import os
 def main():
 
     bt_token = os.getenv('BT_TOKEN')
-    if bt_token == '':
-        bt_token = None
-    else:
-        bt_token = bytes(bt_token, encoding='utf-8')
 
-    encrypt = os.getenv('ENCRYPT') == 'true'
+    bt_iv = os.getenv('BT_IV')
 
     controller = KrecikIOTController(
         bt_token=bt_token,
-        encrypt=encrypt
+        bt_iv=bt_iv,
     )
     controller.run(
-        sleep_interval_s=3600,
+        sleep_interval_s=20*60,
     )
 
 

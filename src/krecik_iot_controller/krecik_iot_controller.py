@@ -1,10 +1,8 @@
 import json
 
-import numpy as np
-
-from bluetooth.krecik_ble_server import KrecikBleServer
-from sensors.krecik_sensor import KrecikSensor
-from services.datasource import Datasource
+from krecik_iot_controller.services.bluetooth.krecik_ble_server import KrecikBleServer
+from krecik_iot_controller.services.krecik_sensor import KrecikSensor
+from krecik_iot_controller.services.datasource import Datasource
 
 from time import sleep
 import subprocess
@@ -18,34 +16,60 @@ class KrecikIOTController:
     def __init__(
             self,
             bt_token,
-            encrypt=True,
+            bt_iv,
             datasource_config_file="conf/datasource.json",
     ):
-        self.encrypt_bt = encrypt
         self.ble_server = None
         self.request_queue = Queue()
 
         print("Szczesc Boze!")
         self.datasource = Datasource(
             bt_token=bt_token,
+            bt_iv=bt_iv,
             conf_file=datasource_config_file
         )
 
         self.sensor_service = KrecikSensor()
 
-        # init datasource
-        if not self.datasource.is_configured():
-            print("Data source not configured.")
-            self._initialize_datasource()
+        needs_configuration = True
+        while needs_configuration:
+            needs_configuration = False
 
-        # init wifi
-        print("Chosen wifi not connected.")
-        try:
-            self._connect_to_wifi()
-            print("Connected to wifi.")
-        except RuntimeError:
-            print("Wifi not configured.")
-            return
+            # init datasource
+            needs_test = False
+            if not self.datasource.is_configured():
+                print("Data source not configured.")
+                needs_test = True
+                self._initialize_datasource()
+
+            # init wifi
+            if not self._is_connected_to_wifi():
+                print("Chosen wifi not connected.")
+                try:
+                    self._connect_to_wifi()
+                    sleep(5)
+                    print("Connected to wifi.")
+                except RuntimeError:
+                    print("Wifi not configured.")
+                    needs_configuration = True
+                    continue
+            else:
+                print("Wifi connected.")
+
+            if needs_test:
+                print("First use test...", end=" ")
+                data = self.sensor_service.get_data()
+                status = self._send_data_to_server(data, verbose=False)
+                success = status == 0
+                if not success:
+                    print(f"Failed. Could not connect to server on initial run ({status}). Resetting data source.")
+                    self.datasource.reset_data()
+                    needs_configuration = True
+                else:
+                    print("Success!")
+                    needs_configuration = False
+
+        print("Krecik IOT controller initialized.")
 
     def _initialize_datasource(self):
 
@@ -53,7 +77,8 @@ class KrecikIOTController:
 
         if self.ble_server is None:
             self.ble_server = KrecikBleServer(
-                bt_token=self.datasource.get_bt_token()
+                bt_token=self.datasource.get_bt_token(),
+                bt_iv=self.datasource.get_bt_iv(),
             )
         ble = self.ble_server
         ble.run()
@@ -70,6 +95,7 @@ class KrecikIOTController:
                         data_from_phone,
                         save=True
                     )
+                    print("Received data... Success!")
                     ble.set_message("S")
 
                     awaiting_data = False
@@ -92,15 +118,17 @@ class KrecikIOTController:
 
         if ssid is None or password is None:
             raise RuntimeError("Wifi not configured.")
+        ssid = '\\ '.join(ssid.split(' '))
 
         print("Connecting to wifi...")
 
-        connect_to_wifi_cmd = "nmcli d wifi c".split(' ')
+        connect_to_wifi_cmd = "sudo nmcli d wifi c".split(' ')
         connect_to_wifi_cmd += [f"{ssid}"]
         connect_to_wifi_cmd += f"password {password}".split(' ')
         try:
             cmd_output = subprocess.check_output(
-                connect_to_wifi_cmd
+                ' '.join(connect_to_wifi_cmd),
+                shell=True
             ).decode('utf-8').strip()
         except subprocess.CalledProcessError as e:
             return
@@ -112,7 +140,8 @@ class KrecikIOTController:
         check_connection_cmd = "nmcli -t -f name connection show --active"
 
         cmd_output = subprocess.check_output(
-            check_connection_cmd.split(' ')
+            check_connection_cmd,
+            shell=True
         )
         cmd_output = cmd_output.decode('utf-8').strip()
         cmd_output = cmd_output.split('\n')
@@ -133,8 +162,8 @@ class KrecikIOTController:
             endpoint = endpoint[1:]
         return f"{host}/{endpoint}"
 
-    def _send_data_to_server(self, data_dict):
-        url = self.__get_backend_url("/records")  # mock @TODO: change
+    def _send_data_to_server(self, data_dict, verbose=True):
+        url = self.__get_backend_url("/records")
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f"Bearer {self.datasource.get_auth_token()}"
@@ -144,37 +173,51 @@ class KrecikIOTController:
             self._connect_to_wifi()
             sleep(.5)
             if not self._is_connected_to_wifi():
-                print("Not connected to wifi. Putting data to queue.")
-                self.request_queue.put(data_dict)
-                return
+                if verbose:
+                    print("Not connected to wifi.")
+                return 1
 
         data = json.loads(json.dumps(data_dict))
 
-        response = requests.post(url, headers=headers, json=data)
+        try:
+            response = requests.post(url, headers=headers, json=data)
+        except Exception as e:
+            if verbose:
+                print("Error sending data to server.")
+            return 2
 
         if response.status_code <= 100 or response.status_code >= 300:
-            print("Error response: " + str(response.json()) + f"(code {response.status_code}). Putting data to queue.")
-            self.request_queue.put(data_dict)
-            return
+            if verbose:
+                print("Error response: " + str(response.json()) + f"(code {response.status_code}).")
+            return 3
 
-        print("Success response: " + str(response.json()))
+        return 0
 
     def run(self, sleep_interval_s):
         print("Imma send some temperature to server now idk...")
         try:
             while True:
                 data = self.sensor_service.get_data()
-                try:
-                    self._send_data_to_server(data)
-                except RuntimeError:
-                    return
+                print("Sending data...", end=" ")
+                success = self._send_data_to_server(data) == 0
+                if success:
+                    print("Success!")
+                else:
+                    print("Failed. Putting data to queue.")
+                    self.request_queue.put(data)
 
-                while not self.request_queue.empty():
+                while success and (not self.request_queue.empty()):
                     try:
                         print("Sending data from queue...")
                         data = self.request_queue.get()
-                        self._send_data_to_server(data)
+                        success = self._send_data_to_server(data) == 0
+                        if not success:
+                            print("Failed. Putting data back to queue.")
+                            self.request_queue.put(data)
+                            break
                     except RuntimeError:
+                        print("Failed. Putting data back to queue.")
+                        self.request_queue.put(data)
                         break
 
                 sleep(sleep_interval_s)

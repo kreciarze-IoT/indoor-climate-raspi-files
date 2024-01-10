@@ -1,9 +1,9 @@
 import dbus
 
-from bluetooth.cputemp.advertisement import Advertisement
-from bluetooth.cputemp.service import Service
-from bluetooth.cputemp.descriptor import Descriptor
-from bluetooth.cputemp.characteristic import Characteristic
+from krecik_iot_controller.services.bluetooth.cputemp.advertisement import Advertisement
+from krecik_iot_controller.services.bluetooth.cputemp.service import Service
+from krecik_iot_controller.services.bluetooth.cputemp.descriptor import Descriptor
+from krecik_iot_controller.services.bluetooth.cputemp.characteristic import Characteristic
 
 NOTIFY_TIMEOUT = 5000
 
@@ -20,12 +20,6 @@ class KrecikService(Service):
 
     def __init__(self, index):
         self.data = ""
-        self.valid_states = {
-            'R': "Ready for config",
-            'S': "Success: configuring",
-            'T': "Failed: invalid token",
-            'D': "Failed: invalid data"
-        }
 
         Service.__init__(self, index, self.SERVICE_UUID, True)
         self.characteristic = KrecikCharacteristic(self)
@@ -39,12 +33,8 @@ class KrecikService(Service):
         raise RuntimeError("No data")
 
     def set_message(self, message):
-        if message not in self.valid_states:
-            raise RuntimeError("Invalid message")
         self.characteristic.message = message
 
-    def get_valid_states(self):
-        return self.valid_states
 
 
 class KrecikCharacteristic(Characteristic):
@@ -57,7 +47,7 @@ class KrecikCharacteristic(Characteristic):
 
         self.add_descriptor(KrecikDescriptor(self))
 
-        self.message = "R"
+        self.message = ""
 
     def WriteValue(self, value, options):
         data = ""
@@ -80,8 +70,7 @@ class KrecikDescriptor(Descriptor):
     UNIT_DESCRIPTOR_UUID = "2901"
     UNIT_DESCRIPTOR_VALUE = (
         "Krecik IOT unit.\n"
-        "Write configuration data to this characteristic.\n"
-        "Response states:\n"
+        "Write configuration data to this characteristic."
     )
 
     def __init__(self, characteristic):
@@ -90,10 +79,7 @@ class KrecikDescriptor(Descriptor):
             ["read"],
             characteristic)
 
-        self.UNIT_DESCRIPTOR_VALUE += ".\n".join(
-            [str(i) + ": " + self.chrc.service.get_valid_states()[i]
-             for i in self.chrc.service.get_valid_states()]
-        )
+        # self.UNIT_DESCRIPTOR_VALUE
 
     def ReadValue(self, options):
         value = []

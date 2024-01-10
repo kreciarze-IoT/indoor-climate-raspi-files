@@ -1,6 +1,7 @@
 numpy
 dbus-python
 PyGObject
-requests
 cryptography
-bmp280
+requests==2.31.0
+bmp280==0.0.4
+pycryptodome>=3.10.1

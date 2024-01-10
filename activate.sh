@@ -9,5 +9,6 @@ sudo bluetoothctl default-agent
 sudo service bluetooth restart
 
 export BT_TOKEN="super_secret_token"
+export BT_IV="super_secret_iv"
 
-python /home/krecik/indoor-climate-raspi-files/src/main.py
+/home/krecik/indoor-climate-raspi-files/venv/bin/python /home/krecik/indoor-climate-raspi-files/src/main.py
