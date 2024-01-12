@@ -13,7 +13,7 @@ def main():
         bt_iv=bt_iv,
     )
     controller.run(
-        sleep_interval_s=20*60,
+        sleep_interval_s=20*60, # [min]
     )
 
 
