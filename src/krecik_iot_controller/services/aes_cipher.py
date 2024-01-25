@@ -4,7 +4,7 @@ from Crypto.Cipher import AES
 
 class AESCipher(object):
 
-    def __init__(self, key:str, iv:str=None):
+    def __init__(self, key: str, iv: str = None):
         self._bs = AES.block_size
         # self.key = hashlib.sha256(key.encode()).digest()
         self._key = bytes.fromhex(key)
@@ -34,6 +34,7 @@ class AESCipher(object):
     @staticmethod
     def _unpad(s):
         return s[:-ord(s[len(s) - 1:])]
+
 
 if __name__ == '__main__':
     print("===== AES test =====")

@@ -7,13 +7,14 @@ import json
 from time import sleep
 
 
-
 class KrecikBleServer:
     def __init__(
             self,
             bt_token,
-            bt_iv
+            bt_iv,
+            device_id
     ):
+        self.device_id = device_id
         self.crypto_service = None
         if bt_token is not None or bt_iv is not None:
             if bt_token is None or bt_iv is None:
@@ -23,10 +24,12 @@ class KrecikBleServer:
             except Exception:
                 raise
 
-        print(f"Initializing Krecik BLE server with{'' if bt_token is not None else 'out'} encryption.")
+        print(
+            f"Initializing Krecik BLE server with{'' if bt_token is not None else 'out'} encryption.")
 
         self.valid_states = {
             'R': "Ready for config",
+            'P': "Publish device_id",
             'S': "Success: configuring",
             'T': "Failed: invalid token",
             'D': "Failed: invalid data"
@@ -42,7 +45,6 @@ class KrecikBleServer:
         self.server.add_advertisement(KrecikAdvertisement(0))
         self.server.register()
         self.set_message('R')
-
 
     def run(self):
         print("Krecik BLE server started.")
@@ -68,22 +70,33 @@ class KrecikBleServer:
         if message not in self.valid_states.keys():
             raise RuntimeError("Invalid message")
         try:
-            if self.crypto_service is not None:
-                message = self.crypto_service.encrypt(message).decode('utf-8')
-            self.service.set_message(message)
+            publish_message = message
+            if message == 'P':
+                if self.crypto_service is not None:
+                    publish_message = self.crypto_service.encrypt(
+                        self.device_id).decode('utf-8')
+                self.service.set_device_message(publish_message)
+                t = threading.Thread(
+                    target=self.__time_reset_msg, args=[5, 'P'])
+                t.start()
+            else:
+                if self.crypto_service is not None:
+                    publish_message = self.crypto_service.encrypt(
+                        message).decode('utf-8')
+                print("publishin some bussin data ", message)
+                self.service.set_message(publish_message)
         except RuntimeError:
             raise
-
-        if message not in ['R', 'S']:
+        if message not in ['R', 'S', 'P']:
             t = threading.Thread(target=self.__time_reset_msg, args=[5])
             t.start()
 
-    def __time_reset_msg(self, delay=5):
+    def __time_reset_msg(self, delay=5, message='R'):
         for _ in range(delay*10):
             sleep(.1)
             if self.kill_threads:
                 return
-        self.set_message('R')
+        self.set_message(message)
 
     def quit(self, delay=0):
         sleep(delay)

@@ -6,8 +6,10 @@ class Datasource:
             self,
             bt_token,
             bt_iv,
-            conf_file
+            conf_file,
+            auth_key
     ):
+        self.auth_key = auth_key
         self._BT_TOKEN = bt_token
         self._BT_IV = bt_iv
         self.conf_file = conf_file
@@ -27,7 +29,7 @@ class Datasource:
                 or 'host' not in data \
                 or 'aes_key' not in data:
             raise RuntimeError("D: Invalid data")
-
+        print(data)
         self.wifi_ssid = data['wifi_ssid']
         self.wifi_password = data['wifi_password']
 
@@ -36,6 +38,22 @@ class Datasource:
 
         if save:
             self.save_data_to_file()
+
+    def check_if_valid(self, data):
+        if 'wifi_ssid' not in data \
+                or 'wifi_password' not in data \
+                or 'host' not in data \
+                or 'aes_key' not in data:
+            raise RuntimeError("D: Invalid data")
+        if data['aes_key'] != self.aes_key:
+            raise RuntimeError("D: Forbidden")
+        else:
+            self.wifi_ssid = data['wifi_ssid']
+            self.wifi_password = data['wifi_password']
+            self.host = data['host']
+            self.save_data_to_file()
+            return True
+        return False
 
     def load_data_from_file(self):
         try:
