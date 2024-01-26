@@ -22,13 +22,11 @@ class KrecikIOTController:
             self,
             bt_token,
             bt_iv,
-            prod_key,
             device_id,
             iv,
             auth_key,
             datasource_config_file="/home/krecik/indoor-climate-raspi-files/conf/datasource.json",
     ):
-        self.prod_key = prod_key
         self.device_id = device_id
         self.ble_server = None
         self.iv = iv
